@@ -210,9 +210,6 @@ void GerenciaMouse(int button, int state, int x, int y)
 
 void key(unsigned char key, int x, int y)
 {
-    double inc_t = 0.1;
-    double inc_r = 50;
-
     switch (key)
     {
         case 27 :
@@ -247,12 +244,12 @@ void teclas_especiais(int key, int x, int y)
     {
 
         case GLUT_KEY_DOWN:
-            x_translacao += 0.1;
+            x_translacao += 0.5;
             ang_rotacao_roda_x += inc_r;
             break;
 
         case GLUT_KEY_UP:
-            x_translacao -= 0.1;
+            x_translacao -= 0.5;
             ang_rotacao_roda_x -= inc_r;
             break;
 
