@@ -7,6 +7,11 @@
 #define GLUT_DISABLE_ATEXIT_HACK
 #include <windows.h>
 #include <gl/glut.h>
+#include <stdio.h>
+#include <math.h>
+#include "vetor.h"
+#define PI 3.1415265359
+#define PIdiv180 3.1415265359/180.0
 
 GLfloat angle, fAspect;
 
@@ -25,13 +30,98 @@ GLdouble x_translacao = 20.0;
 GLdouble y_translacao = 41.0;
 GLdouble z_translacao = 40.0;
 
-double ang_rotacao_roda_x = 0.9;
-double ang_rotacao_roda_y = 0.9;
+double ang_rotacao_roda_x = 0;
+double ang_rotacao_roda_y_1 = 0;
+double ang_rotacao_roda_y_2 = 0;
+
+vetor vetorPosicao = vetor(20.0,41.0,40.0);
+
+bool mudouDirecao = false;
+
+bool seta_cima = false;
+bool seta_baixo = false;
+bool seta_esquerda = false;
+bool seta_direita = false;
 
 void rotacionarY(GLfloat angulo)
 {
-    y_alvo += angulo;
+    ang_rotacao_roda_y_1 += angulo;
+
+    mudouDirecao = true;
+
+    if(angulo > 0) {
+        if(ang_rotacao_roda_y_1 > 60) {
+            ang_rotacao_roda_y_1 = 60;
+        } else if (ang_rotacao_roda_y_1 == 60) {
+            mudouDirecao = false;
+        }
+    } else {
+        if(ang_rotacao_roda_y_1 < -60) {
+            ang_rotacao_roda_y_1 = -60;
+        } else if (ang_rotacao_roda_y_1 == 60) {
+            mudouDirecao = false;
+        }
+    }
+
 }
+
+void verificar_teclas(){
+
+    double inc_t = 90;
+    double inc_r = 20;
+
+    if(seta_baixo) {
+        //moverPraFrente(0.5);
+        vetorPosicao.x += 0.5;
+        ang_rotacao_roda_x -= inc_r;
+    }
+
+    if(seta_cima) {
+        //moverPraFrente(-0.5);
+        vetorPosicao.x -= 0.5;
+        ang_rotacao_roda_x += inc_r;
+    }
+
+    if(seta_esquerda) {
+        ang_rotacao_roda_y_1 += inc_r;
+        rotacionarY(inc_r);
+    }
+
+    if(seta_direita) {
+        ang_rotacao_roda_y_1 -= inc_r;
+        rotacionarY(-inc_r);
+    }
+}
+
+//void moverPraFrente(GLdouble dist)
+//{
+//    vetor vetorDirecao;
+//
+//	if (mudouDirecao) {
+//
+//        vetor step1;
+//        vetor step2;
+//
+//        //Rotate around Y-axis:
+//        step1.x = cos( (ang_rotacao_roda_y_1 + 90.0) * PIdiv180);
+//        step1.z = -sin( (ang_rotacao_roda_y_1 + 90.0) * PIdiv180);
+//
+//        //Rotate around X-axis:
+//        double cosX = cos (ang_rotacao_roda_x * PIdiv180);
+//        step2.x = step1.x * cosX;
+//        step2.z = step1.z * cosX;
+//        step2.y = sin(ang_rotacao_roda_y_1 * PIdiv180);
+//
+//        //Rotation around Z-axis not yet implemented, so:
+//        vetorDirecao = step2;
+//    }
+//
+//	vetorPosicao.x += vetorDirecao.x * dist;
+//	//vetorPosicao.y += vetorDirecao.y * dist;
+//	vetorPosicao.z += vetorDirecao.z * dist;
+//
+//    mudouDirecao = false;
+//}
 
 void roda(GLdouble x, GLdouble y, GLdouble z, bool ehRodaFrente)
 {
@@ -40,10 +130,124 @@ void roda(GLdouble x, GLdouble y, GLdouble z, bool ehRodaFrente)
         glTranslated(x, y, z);
         glRotated(15,1,0,0); // isso deixa a roda na posição certa no plano xz
         if(ehRodaFrente)
-            glRotated(ang_rotacao_roda_y,0,1,0);
+            glRotated(ang_rotacao_roda_y_1,0,1,0);
         glRotated(ang_rotacao_roda_x,0,0,1);  //roda a roda =P
         glutSolidTorus(0.4,1.0,slices,stacks);
     glPopMatrix();
+
+}
+
+void desenhar_rodas_carro() {
+
+    glColor3f(0.0f, 0.0f, 0.0f); //deixa as rodas pretas
+
+	roda(vetorPosicao.x, vetorPosicao.y, vetorPosicao.z, false);
+	roda(vetorPosicao.x, vetorPosicao.y, vetorPosicao.z -10, false);
+	roda(vetorPosicao.x - 10, vetorPosicao.y, vetorPosicao.z, true);
+	roda(vetorPosicao.x - 10, vetorPosicao.y, vetorPosicao.z -10, true);
+}
+
+void desenhar_outra_parte_carro() {
+
+    glColor3f(1.0f, 0.0f, 0.0f);
+
+    glBegin(GL_QUADS);	 // Face inferior
+        glNormal3f(0.0, -1.0, 0.0);  // Normal da face
+        glVertex3f(vetorPosicao.x-23, vetorPosicao.y, z_translacao-20); // sup esq	 A
+        glVertex3f(vetorPosicao.x-23,vetorPosicao.y, z_translacao); // inf esq	 B
+        glVertex3f(vetorPosicao.x+3,vetorPosicao.y, z_translacao); // inf dir	 C
+        glVertex3f(vetorPosicao.x+3, vetorPosicao.y, z_translacao-20); // sup dir	 D
+    glEnd();
+
+
+    glBegin(GL_QUADS);	 // Face posterior
+        glNormal3f(0.0, 0.0, -1.0);	// Normal da face
+        glVertex3f(vetorPosicao.x-23, vetorPosicao.y, z_translacao-20); //	 A
+        glVertex3f(vetorPosicao.x+3, vetorPosicao.y, z_translacao-20); //	 D
+        glVertex3f(vetorPosicao.x+3, vetorPosicao.y+5, z_translacao-20); //	 E
+        glVertex3f(vetorPosicao.x-23, vetorPosicao.y+5, z_translacao-20); // G
+    glEnd();
+
+
+    glBegin(GL_QUADS);	 // Face lateral direita
+        glNormal3f(1.0, 0.0, 0.0);	// Normal da face
+        glVertex3f(vetorPosicao.x+3,vetorPosicao.y, z_translacao); //	 C
+        glVertex3f(vetorPosicao.x+3, vetorPosicao.y, z_translacao-20); //	 D
+        glVertex3f(vetorPosicao.x+3, vetorPosicao.y+5, z_translacao-20); //	 E
+        glVertex3f(vetorPosicao.x+3,vetorPosicao.y+5, z_translacao); //	 F
+    glEnd();
+
+    glBegin(GL_QUADS);	 // Face lateral esquerda
+        glNormal3f(-1.0, 0.0, 0.0); // Normal da face
+        glVertex3f(vetorPosicao.x-23,vetorPosicao.y, z_translacao); //	 B
+        glVertex3f(vetorPosicao.x-23, vetorPosicao.y, z_translacao-20); //	 A
+        glVertex3f(vetorPosicao.x-23, vetorPosicao.y+5, z_translacao-20); //	 G
+        glVertex3f(vetorPosicao.x-23,vetorPosicao.y+5, z_translacao); //	 H
+    glEnd();
+
+    glBegin(GL_QUADS);	 // Face frontal
+        glNormal3f(0.0, 0.0, 1.0); // Normal da face
+        glVertex3f(vetorPosicao.x-23,vetorPosicao.y, z_translacao); //	 B
+        glVertex3f(vetorPosicao.x+3,vetorPosicao.y, z_translacao); //	 C
+        glVertex3f(vetorPosicao.x+3,vetorPosicao.y+5, z_translacao); //	 F
+        glVertex3f(vetorPosicao.x-23,vetorPosicao.y+5, z_translacao); //	 H
+    glEnd();
+
+    glBegin(GL_QUADS);	 // Face superior
+        glNormal3f(0.0, 1.0, 0.0);  // Normal da face
+        glVertex3f(vetorPosicao.x-23, vetorPosicao.y+5, z_translacao-20); // sup esq	G
+        glVertex3f(vetorPosicao.x-23,vetorPosicao.y+5, z_translacao); // inf esq	 H
+        glVertex3f(vetorPosicao.x+3,vetorPosicao.y+5, z_translacao); // inf dir	 F
+        glVertex3f(vetorPosicao.x+3, vetorPosicao.y+5, z_translacao-20); // sup dir	 E
+    glEnd();
+
+    //Parte de cima
+
+    glBegin(GL_QUADS);	 // Face posterior
+        glNormal3f(0.0, 0.0, -1.0);	// Normal da face
+        glVertex3f(vetorPosicao.x+3, vetorPosicao.y+4, z_translacao-20-0.2); //	 E
+        glVertex3f(vetorPosicao.x+3, vetorPosicao.y+10, z_translacao-20); //	 J
+        glVertex3f(vetorPosicao.x-15, vetorPosicao.y+10, z_translacao-20); //	 L
+        glVertex3f(vetorPosicao.x-15, vetorPosicao.y+4, z_translacao-20-0.2); //	 L'
+    glEnd();
+
+    glColor4f(0.3f, 0.4f, 1.0f, 1.0f);
+
+    glBegin(GL_QUADS);	 // Face lateral esquerda
+        glNormal3f(-1.0, 0.0, 0.0); // Normal da face
+        glVertex3f(vetorPosicao.x-15, vetorPosicao.y+10, z_translacao-20); //	 L
+        glVertex3f(vetorPosicao.x-15,vetorPosicao.y+10, z_translacao); //	 M
+        glVertex3f(vetorPosicao.x-15,vetorPosicao.y+5, z_translacao); //	 M'
+        glVertex3f(vetorPosicao.x-15, vetorPosicao.y+5, z_translacao-20); //	 L'
+    glEnd();
+
+    glColor3f(1.0f, 0.0f, 0.0f);
+
+    glBegin(GL_QUADS);	 // Face lateral direita
+        glNormal3f(1.0, 0.0, 0.0);	// Normal da face
+        glVertex3f(vetorPosicao.x+3+0.1, vetorPosicao.y+4, z_translacao-20); //	 E
+        glVertex3f(vetorPosicao.x+3+0.1,vetorPosicao.y+4, z_translacao); //	 F
+        glVertex3f(vetorPosicao.x+3,vetorPosicao.y+10, z_translacao); //	 I
+        glVertex3f(vetorPosicao.x+3, vetorPosicao.y+10, z_translacao-20); //	 J
+    glEnd();
+
+    glBegin(GL_QUADS);	 // Face frontal
+        glNormal3f(0.0, 0.0, 1.0); // Normal da face
+        glVertex3f(vetorPosicao.x+3,vetorPosicao.y+5, z_translacao+0.1); //	 F
+        glVertex3f(vetorPosicao.x+3,vetorPosicao.y+10, z_translacao); //	 I
+        glVertex3f(vetorPosicao.x-15,vetorPosicao.y+10, z_translacao); //	 M
+        glVertex3f(vetorPosicao.x-15,vetorPosicao.y+5, z_translacao+0.1); //	 M'
+    glEnd();
+
+    glBegin(GL_QUADS);	 // Face superior
+        glNormal3f(0.0, 1.0, 0.0);  // Normal da face
+        glVertex3f(vetorPosicao.x-15, vetorPosicao.y+10, z_translacao-20); // sup esq	L
+        glVertex3f(vetorPosicao.x-15,vetorPosicao.y+10, z_translacao); // inf esq	 M
+        glVertex3f(vetorPosicao.x+3,vetorPosicao.y+10, z_translacao); // inf dir	 I
+        glVertex3f(vetorPosicao.x+3, vetorPosicao.y+10, z_translacao-20); // sup dir	J
+    glEnd();
+
+    glColor3f(0.0f, 0.0f, 0.0f);
 
 }
 
@@ -52,74 +256,28 @@ void Desenha(void)
 {
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glColor3f(0.0f, 0.0f, 1.0f);
+	glColor3f(0.0f, 0.0f, 1.0f); //deixa o plano azul
 
-	// Desenha um cubo
-/*
-//	glBegin(GL_QUADS);			// Face posterior
-//		glNormal3f(0.0, 0.0, 1.0);	// Normal da face
-//		glVertex3f(40.0, 40.0, 40.0);
-//		glVertex3f(-40.0, 40.0, 40.0);
-//		glVertex3f(-40.0, -40.0, 40.0);
-//		glVertex3f(40.0, -40.0, 40.0);
-//	glEnd();
-//
-//	glBegin(GL_QUADS);			// Face frontal
-//		glNormal3f(0.0, 0.0, -1.0); 	// Normal da face
-//		glVertex3f(40.0, 40.0, -40.0);
-//		glVertex3f(40.0, -40.0, -40.0);
-//		glVertex3f(-40.0, -40.0, -40.0);
-//		glVertex3f(-40.0, 40.0, -40.0);
-//	glEnd();
-//
-//	glBegin(GL_QUADS);			// Face lateral esquerda
-//		glNormal3f(-1.0, 0.0, 0.0); 	// Normal da face
-//		glVertex3f(-40.0, 40.0, 40.0);
-//		glVertex3f(-40.0, 40.0, -40.0);
-//		glVertex3f(-40.0, -40.0, -40.0);
-//		glVertex3f(-40.0, -40.0, 40.0);
-//	glEnd();
-//
-//	glBegin(GL_QUADS);			// Face lateral direita
-//		glNormal3f(1.0, 0.0, 0.0);	// Normal da face
-//		glVertex3f(40.0, 40.0, 40.0);
-//		glVertex3f(40.0, -40.0, 40.0);
-//		glVertex3f(40.0, -40.0, -40.0);
-//		glVertex3f(40.0, 40.0, -40.0);
-//	glEnd();
-*/
-	glBegin(GL_QUADS);			// Face superior
-		glNormal3f(0.0, 1.0, 0.0);  	// Normal da face
+	glBegin(GL_QUADS);
+		glNormal3f(0.0, 1.0, 0.0); // Normal do plano
 		glVertex3f(-40.0, 40.0, -80.0);
 		glVertex3f(-40.0, 40.0, 80.0);
 		glVertex3f(40.0, 40.0, 80.0);
 		glVertex3f(40.0, 40.0, -80.0);
 	glEnd();
 
-    glColor3f(0.0f, 0.0f, 0.0f);
-
-	roda(x_translacao, y_translacao, z_translacao, false);
-	roda(x_translacao, y_translacao, z_translacao-20, false);
-	roda(x_translacao-20, y_translacao, z_translacao, true);
-	roda(x_translacao-20, y_translacao, z_translacao-20, true);
-
-//	glBegin(GL_QUADS);			// Face inferior
-//		glNormal3f(0.0, -1.0, 0.0); 	// Normal da face
-//		glVertex3f(-40.0, -40.0, -40.0);
-//		glVertex3f(40.0, -40.0, -40.0);
-//		glVertex3f(40.0, -40.0, 40.0);
-//		glVertex3f(-40.0, -40.0, 40.0);
-//	glEnd();
+    desenhar_rodas_carro();
+    desenhar_outra_parte_carro();
 
 	glutSwapBuffers();
 }
 
-// Inicializa parâmetros de rendering
-void Inicializa (void)
+// iluminação
+void light (void)
 {
 	GLfloat luzAmbiente[4]={0.2,0.2,0.2,1.0};
-	GLfloat luzDifusa[4]={0.7,0.7,0.7,1.0};	   // "cor"
-	GLfloat luzEspecular[4]={1.0, 1.0, 1.0, 1.0};// "brilho"
+	GLfloat luzDifusa[4]={0.7,0.7,0.7,1.0};
+	GLfloat luzEspecular[4]={1.0, 1.0, 1.0, 1.0};
 	GLfloat posicaoLuz[4]={0.0, 50.0, 50.0, 1.0};
 
 	// Capacidade de brilho do material
@@ -174,8 +332,7 @@ void EspecificaParametrosVisualizacao(void)
 	// Inicializa sistema de coordenadas do modelo
 	glLoadIdentity();
 
-	// Especifica posição do observador e do alvo
-	gluLookAt( x_camera,y_camera,z_camera, x_alvo,y_alvo,z_alvo, 0,1,0);
+    gluLookAt( x_camera,y_camera,z_camera, x_alvo,y_alvo,z_alvo, 0,1,0);
 }
 
 // Função callback chamada quando o tamanho da janela é alterado
@@ -235,32 +392,50 @@ void key(unsigned char key, int x, int y)
     glutPostRedisplay();
 }
 
-void teclas_especiais(int key, int x, int y)
+void s_key_up(int key, int x, int y)
 {
-    double inc_t = 90;
-    double inc_r = 20;
 
     switch (key)
     {
-
         case GLUT_KEY_DOWN:
-            x_translacao += 0.5;
-            ang_rotacao_roda_x += inc_r;
+            seta_baixo = false;
             break;
 
         case GLUT_KEY_UP:
-            x_translacao -= 0.5;
-            ang_rotacao_roda_x -= inc_r;
+            seta_cima = false;
             break;
 
         case GLUT_KEY_LEFT:
-            ang_rotacao_roda_y += inc_r;
-            if(ang_rotacao_roda_y >= 60.9) ang_rotacao_roda_y = 60.9;
+            seta_esquerda = false;
             break;
 
         case GLUT_KEY_RIGHT:
-            ang_rotacao_roda_y -= inc_r;
-            if(ang_rotacao_roda_y <= -60.9) ang_rotacao_roda_y = -60.9;
+            seta_direita = false;
+            break;
+    }
+
+    glutPostRedisplay();
+}
+
+void s_key(int key, int x, int y)
+{
+
+    switch (key)
+    {
+        case GLUT_KEY_DOWN:
+            seta_baixo = true;
+            break;
+
+        case GLUT_KEY_UP:
+            seta_cima = true;
+            break;
+
+        case GLUT_KEY_LEFT:
+            seta_esquerda = true;
+            break;
+
+        case GLUT_KEY_RIGHT:
+            seta_direita = true;
             break;
 
         case GLUT_KEY_F5:
@@ -268,8 +443,9 @@ void teclas_especiais(int key, int x, int y)
             y_translacao = 41.0;
             z_translacao = 40.0;
             break;
-
     }
+
+    verificar_teclas();
 
     glutPostRedisplay();
 }
@@ -277,14 +453,20 @@ void teclas_especiais(int key, int x, int y)
 // Programa Principal
 int main(void)
 {
+    //coisas da janela
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 	glutInitWindowSize(800,800);
-	glutCreateWindow("Visualizacao 3D");
+	glutCreateWindow("calhambeque");
+
+	//"métodos" principais
 	glutDisplayFunc(Desenha);
 	glutReshapeFunc(AlteraTamanhoJanela);
 	glutMouseFunc(GerenciaMouse);
 	glutKeyboardFunc(key);
-	glutSpecialFunc(teclas_especiais);
-	Inicializa();
+	glutSpecialUpFunc(s_key_up);
+	glutSpecialFunc(s_key);
+	light();
+
+	//processa todas as mensagens
 	glutMainLoop();
 }
