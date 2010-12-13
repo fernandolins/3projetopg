@@ -218,3 +218,30 @@
 	<stddef.h>
 	<GL/gl.h>
 
+1292265344 source:d:\workspace_codeblocks\3projetopg\main.cpp
+	<windows.h>
+	<gl/glut.h>
+	<stdio.h>
+	<math.h>
+	"vetor.h"
+
+1292240632 source:d:\workspace_codeblocks\3projetopg\vetor.cpp
+	"vetor.h"
+
+1292243214 d:\workspace_codeblocks\3projetopg\vetor.h
+	<windows.h>
+	<GL/glut.h>
+
+1186182506 d:\instaladores\cb_4551_alleg - opengl\mingw\include\math.h
+	<_mingw.h>
+
+1186182506 d:\instaladores\cb_4551_alleg - opengl\mingw\include\stdio.h
+	<_mingw.h>
+	<stddef.h>
+	<stdarg.h>
+	<sys/types.h>
+
+1186182510 d:\instaladores\cb_4551_alleg - opengl\mingw\include\sys\types.h
+	<_mingw.h>
+	<stddef.h>
+
