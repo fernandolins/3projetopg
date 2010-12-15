@@ -40,12 +40,13 @@ int stacks = 16;
 //GLdouble y_translacao = 41.0;
 //GLdouble z_translacao = 40.0;
 
+double ang_rotacao_carro_y = 0;
 double ang_rotacao_roda_x = 0;
-double ang_rotacao_roda_y_1 = 0;
-double ang_rotacao_roda_y_2 = 0;
+double ang_rotacao_roda_y = 0;
 
-
+bool moveu = false;
 bool mudouDirecao = false;
+bool rodasAlinhadas = false;
 
 bool seta_cima = false;
 bool seta_baixo = false;
@@ -60,27 +61,37 @@ GLdouble zi = vetorCoordCarro.z;
 
 void rotacionarY(GLfloat angulo)
 {
-    ang_rotacao_roda_y_1 += angulo;
+    ang_rotacao_roda_y += angulo;
 
     mudouDirecao = true;
 
     if(angulo > 0) {
-        if(ang_rotacao_roda_y_1 > 60) {
-            ang_rotacao_roda_y_1 = 60;
-        } else if (ang_rotacao_roda_y_1 == 60) {
+        rodasAlinhadas = false;
+
+        if(ang_rotacao_roda_y > 60) {
+            ang_rotacao_roda_y = 60;
+        } else if (ang_rotacao_roda_y == 60) {
             mudouDirecao = false;
+        } else if (ang_rotacao_roda_y == 0) {
+            rodasAlinhadas = true;
         }
     } else {
-        if(ang_rotacao_roda_y_1 < -60) {
-            ang_rotacao_roda_y_1 = -60;
-        } else if (ang_rotacao_roda_y_1 == 60) {
+        rodasAlinhadas = false;
+
+        if(ang_rotacao_roda_y < -60) {
+            ang_rotacao_roda_y = -60;
+        } else if (ang_rotacao_roda_y == 60) {
             mudouDirecao = false;
+        } else if (ang_rotacao_roda_y == 0){
+            rodasAlinhadas = true;
         }
     }
 
+    printf("%lf", ang_rotacao_roda_y);
+
 }
 
-void moverLado(GLdouble dist, bool esquerda) {
+void moverLado(GLdouble dist) {
 
     vetor vetorDirecao;
 
@@ -90,58 +101,72 @@ void moverLado(GLdouble dist, bool esquerda) {
         vetor step2;
 
         //Rotate around Y-axis:
-        step1.x = sin( (ang_rotacao_roda_y_1 + 90.0) * PIdiv180);
-        step1.z = -cos( (ang_rotacao_roda_y_1 + 90.0) * PIdiv180);
+        step1.x = cos( (ang_rotacao_roda_y ) * PIdiv180);
+        step1.z = -sin( (ang_rotacao_roda_y ) * PIdiv180);
 
 //        //Rotate around X-axis:
 //        double cosX = cos (ang_rotacao_roda_x * PIdiv180);
 //        step2.x = step1.x * cosX;
 //        step2.z = step1.z * cosX;
-//        step2.y = sin(ang_rotacao_roda_y_1 * PIdiv180);
+//        step2.y = sin(ang_rotacao_roda_y * PIdiv180);
 //
 //        //Rotation around Z-axis not yet implemented, so:
         vetorDirecao = step1;
     }
 
-    if(esquerda) {
-        vetorCoordCarro.x -= vetorDirecao.x + dist;
-        //vetorCoordCarro.y += vetorDirecao.y * dist;
-        vetorCoordCarro.z -= vetorDirecao.z + dist;
-    } else {
-        vetorCoordCarro.x += vetorDirecao.x + dist;
-        //vetorCoordCarro.y += vetorDirecao.y * dist;
-        vetorCoordCarro.z += vetorDirecao.z + dist;
-    }
+    vetorCoordCarro.x -= vetorDirecao.x * dist;
+    vetorCoordCarro.z -= vetorDirecao.z * dist;
 
     mudouDirecao = false;
 }
 
-void moverPraFrente(GLdouble dist)
+void mover(GLdouble dist)
 {
+//    vetor vetorDirecao;
+//
+//	if (mudouDirecao) {
+//
+//        vetor step1;
+//        vetor step2;
+//
+//        //Rotate around Y-axis:
+//        step1.x = cos( (ang_rotacao_roda_y + 90.0) * PIdiv180);
+//        step1.z = -sin( (ang_rotacao_roda_y + 90.0) * PIdiv180);
+//
+//        //Rotate around X-axis:
+//        double cosX = cos (ang_rotacao_roda_x * PIdiv180);
+//        step2.x = step1.x * cosX;
+//        step2.z = step1.z * cosX;
+//        step2.y = sin(ang_rotacao_roda_y * PIdiv180);
+//
+//        //Rotation around Z-axis not yet implemented, so:
+//        vetorDirecao = step1;
+//    }
+//
+//	vetorCoordCarro.x += vetorDirecao.x * dist;
+//	vetorCoordCarro.y += vetorDirecao.y * dist;
+//	vetorCoordCarro.z += vetorDirecao.z * dist;
+//
+//    mudouDirecao = false;
+
     vetor vetorDirecao;
 
-	if (mudouDirecao) {
+	if (ang_rotacao_roda_y > 0) {
 
-        vetor step1;
-        vetor step2;
+        //rotacionar em torno de y:
+        vetorDirecao.x = sin( (ang_rotacao_roda_y ) * PIdiv180);
+        vetorDirecao.z = -cos( (ang_rotacao_roda_y ) * PIdiv180);
 
-        //Rotate around Y-axis:
-        step1.x = cos( (ang_rotacao_roda_y_1 + 90.0) * PIdiv180);
-        step1.z = -sin( (ang_rotacao_roda_y_1 + 90.0) * PIdiv180);
+   } else {
 
-        //Rotate around X-axis:
-        double cosX = cos (ang_rotacao_roda_x * PIdiv180);
-        step2.x = step1.x * cosX;
-        step2.z = step1.z * cosX;
-        step2.y = sin(ang_rotacao_roda_y_1 * PIdiv180);
+        //rotacionar em torno de y:
+        vetorDirecao.x = sin( (ang_rotacao_roda_y ) * PIdiv180);
+        vetorDirecao.z = cos( (ang_rotacao_roda_y ) * PIdiv180);
 
-        //Rotation around Z-axis not yet implemented, so:
-        vetorDirecao = step1;
-    }
+   }
 
-	vetorCoordCarro.x += vetorDirecao.x * dist;
-	vetorCoordCarro.y += vetorDirecao.y * dist;
-	vetorCoordCarro.z += vetorDirecao.z * dist;
+    vetorCoordCarro.x -= vetorDirecao.x * dist;
+    vetorCoordCarro.z += vetorDirecao.z * dist;
 
     mudouDirecao = false;
 }
@@ -149,29 +174,23 @@ void moverPraFrente(GLdouble dist)
 void verificar_teclas(){
 
     double inc_t = 90;
-    double angulo = 60;
+    double angulo = 10;
 
     if(seta_baixo) {
-        //moverPraFrente(0.5);
         vetorCoordCarro.x += 0.5;
-        ang_rotacao_roda_x += angulo;
+        mover(0.5);
     }
 
     if(seta_cima) {
-        //moverPraFrente(-0.5);
         vetorCoordCarro.x -= 0.5;
-        ang_rotacao_roda_x -= angulo;
+        mover(-0.5);
     }
 
     if(seta_esquerda) {
-        //ang_rotacao_roda_y_1 += inc_r;
         rotacionarY(angulo);
-        //moverPraFrente(angulo);
-        //moverLado(5, true);
     }
 
     if(seta_direita) {
-        //ang_rotacao_roda_y_1 -= inc_r;
         rotacionarY(-angulo);
     }
 
@@ -183,7 +202,7 @@ void roda(GLdouble x, GLdouble y, GLdouble z, bool ehRodaFrente)
     glPushMatrix();
         glTranslated(x, y, z);
         if(ehRodaFrente)
-            glRotated(ang_rotacao_roda_y_1,0,1,0);
+            glRotated(ang_rotacao_roda_y,0,1,0);
         glRotated(ang_rotacao_roda_x,0,0,1);  //roda a roda =P
         glutSolidTorus(0.5,1.0,slices,stacks);
     glPopMatrix();
@@ -304,12 +323,13 @@ void Desenha(void)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glColor3f(0.0f, 0.0f, 1.0f); //deixa o plano azul
 
-    glPushMatrix();
-
     desenhar_plano();
-    desenhar_rodas_carro();
-    desenhar_outra_parte_carro();
 
+    glPushMatrix();
+        ang_rotacao_carro_y += ang_rotacao_roda_y;
+        glRotated(ang_rotacao_carro_y,0,1,0);
+        desenhar_rodas_carro();
+        desenhar_outra_parte_carro();
     glPopMatrix();
 
 	glutSwapBuffers();
