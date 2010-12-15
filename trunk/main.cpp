@@ -25,10 +25,6 @@ vetor vetorCoordCamera = vetor(0,80, 200);
 vetor vetorCoordCarro = vetor(20.0,41.0,40.0);
 vetor vetorDistPercorrida = vetor(0.0,0.0,0.0);
 
-//GLdouble vetorCoordCamera.x = 0;
-//GLdouble vetorCoordCamera.y = 80;
-//GLdouble vetorCoordCamera.z = 200;
-
 GLdouble x_alvo = 0;
 GLdouble y_alvo = 0;
 GLdouble z_alvo = 0;
@@ -36,17 +32,11 @@ GLdouble z_alvo = 0;
 int slices = 16;
 int stacks = 16;
 
-//GLdouble x_translacao = 20.0;
-//GLdouble y_translacao = 41.0;
-//GLdouble z_translacao = 40.0;
-
 double ang_rotacao_carro_y = 0;
 double ang_rotacao_roda_x = 0;
 double ang_rotacao_roda_y = 0;
 
 bool moveu = false;
-bool mudouDirecao = false;
-bool rodasAlinhadas = false;
 
 bool seta_cima = false;
 bool seta_baixo = false;
@@ -63,65 +53,19 @@ void rotacionarY(GLfloat angulo)
 {
     ang_rotacao_roda_y += angulo;
 
-    mudouDirecao = true;
-
-    if(angulo > 0) {
-        rodasAlinhadas = false;
-
-        if(ang_rotacao_roda_y > 60) {
-            ang_rotacao_roda_y = 60;
-        } else if (ang_rotacao_roda_y == 60) {
-            mudouDirecao = false;
-        } else if (ang_rotacao_roda_y == 0) {
-            rodasAlinhadas = true;
-        }
-    } else {
-        rodasAlinhadas = false;
-
-        if(ang_rotacao_roda_y < -60) {
-            ang_rotacao_roda_y = -60;
-        } else if (ang_rotacao_roda_y == 60) {
-            mudouDirecao = false;
-        } else if (ang_rotacao_roda_y == 0){
-            rodasAlinhadas = true;
-        }
+    if(ang_rotacao_roda_y > 60) {
+        ang_rotacao_roda_y = 60;
+    } else if(ang_rotacao_roda_y < -60) {
+        ang_rotacao_roda_y = -60;
     }
 
-    printf("%lf", ang_rotacao_roda_y);
+    printf("aslakasa %lf", ang_rotacao_roda_y);
 
-}
-
-void moverLado(GLdouble dist) {
-
-    vetor vetorDirecao;
-
-	if (mudouDirecao) {
-
-        vetor step1;
-        vetor step2;
-
-        //Rotate around Y-axis:
-        step1.x = cos( (ang_rotacao_roda_y ) * PIdiv180);
-        step1.z = -sin( (ang_rotacao_roda_y ) * PIdiv180);
-
-//        //Rotate around X-axis:
-//        double cosX = cos (ang_rotacao_roda_x * PIdiv180);
-//        step2.x = step1.x * cosX;
-//        step2.z = step1.z * cosX;
-//        step2.y = sin(ang_rotacao_roda_y * PIdiv180);
-//
-//        //Rotation around Z-axis not yet implemented, so:
-        vetorDirecao = step1;
-    }
-
-    vetorCoordCarro.x -= vetorDirecao.x * dist;
-    vetorCoordCarro.z -= vetorDirecao.z * dist;
-
-    mudouDirecao = false;
 }
 
 void mover(GLdouble dist)
 {
+    /*
 //    vetor vetorDirecao;
 //
 //	if (mudouDirecao) {
@@ -148,27 +92,30 @@ void mover(GLdouble dist)
 //	vetorCoordCarro.z += vetorDirecao.z * dist;
 //
 //    mudouDirecao = false;
+*/
 
     vetor vetorDirecao;
 
-	if (ang_rotacao_roda_y > 0) {
+    if (ang_rotacao_roda_y > 0) {
 
         //rotacionar em torno de y:
-        vetorDirecao.x = sin( (ang_rotacao_roda_y ) * PIdiv180);
-        vetorDirecao.z = -cos( (ang_rotacao_roda_y ) * PIdiv180);
-
+        vetorDirecao.x = cos( (ang_rotacao_roda_y ) * PIdiv180);
+        vetorDirecao.z = -sin( (ang_rotacao_roda_y ) * PIdiv180);
+    printf("Angulo %lf",ang_rotacao_carro_y );
    } else {
 
         //rotacionar em torno de y:
-        vetorDirecao.x = sin( (ang_rotacao_roda_y ) * PIdiv180);
-        vetorDirecao.z = cos( (ang_rotacao_roda_y ) * PIdiv180);
+        vetorDirecao.x = cos( (ang_rotacao_roda_y ) * PIdiv180);
+        vetorDirecao.z = sin( (ang_rotacao_roda_y ) * PIdiv180);
+
+        printf("Angulo %lf",ang_rotacao_carro_y );
 
    }
 
+    //ffa2- troquei z por x em vetorCoordCarro!!!!!!!!!!!
     vetorCoordCarro.x -= vetorDirecao.x * dist;
     vetorCoordCarro.z += vetorDirecao.z * dist;
 
-    mudouDirecao = false;
 }
 
 void verificar_teclas(){
@@ -177,13 +124,15 @@ void verificar_teclas(){
     double angulo = 10;
 
     if(seta_baixo) {
-        vetorCoordCarro.x += 0.5;
         mover(0.5);
+        moveu = true;
+        printf("moveu baixo");
     }
 
     if(seta_cima) {
-        vetorCoordCarro.x -= 0.5;
         mover(-0.5);
+        moveu = true;
+        printf("moveu cima");
     }
 
     if(seta_esquerda) {
@@ -316,7 +265,6 @@ void desenhar_outra_parte_carro() {
 // Função callback chamada para fazer o desenho
 void Desenha(void)
 {
-
     glLoadIdentity();
     gluLookAt( vetorCoordCamera.x, vetorCoordCamera.y, vetorCoordCamera.z, vetorCoordCarro.x - xi, 0 ,vetorCoordCarro.z - zi - 100, 0,1,0);
 
@@ -326,8 +274,12 @@ void Desenha(void)
     desenhar_plano();
 
     glPushMatrix();
-        ang_rotacao_carro_y += ang_rotacao_roda_y;
-        glRotated(ang_rotacao_carro_y,0,1,0);
+        if(moveu) {
+            ang_rotacao_carro_y += ang_rotacao_roda_y;
+            glRotated(ang_rotacao_carro_y,0,1,0);
+            moveu = false;
+        }
+        printf("entrou aqui!!");
         desenhar_rodas_carro();
         desenhar_outra_parte_carro();
     glPopMatrix();
@@ -550,7 +502,7 @@ void s_key(int key, int x, int y)
 }
 
 // Programa Principal
-int main(void)
+int main(int argc, char *argv[])
 {
     //coisas da janela
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
@@ -563,9 +515,11 @@ int main(void)
 	glutMouseFunc(GerenciaMouse);
 	glutKeyboardFunc(key);
 	glutSpecialUpFunc(s_key_up);
-	glutSpecialFunc(s_key);
+	//glutSpecialFunc(s_key);
 	light();
 
 	//processa todas as mensagens
 	glutMainLoop();
+
+	return EXIT_SUCCESS;
 }
