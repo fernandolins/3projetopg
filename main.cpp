@@ -5,25 +5,36 @@
 // "OpenGL SuperBible", 2nd Edition, de Richard S. e Wright Jr.
 
 #define GLUT_DISABLE_ATEXIT_HACK
-
 #ifdef __APPLE__
 #include <GLUT/glut.h>
 #else
 #include <windows.h>
-#include <gl/glut.h>
+#include <GL/glut.h>
+#include <gl/glu.h>
+#include <gl/gl.h>
 #endif
-
+#include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #include "vetor.h"
+#include "tgaload.h"
+
+
 #define PI 3.1415265359
 #define PIdiv180 3.1415265359/180.0
 
+// Qtd máxima de texturas a serem usadas no programa
+#define MAX_NO_TEXTURES 10
+
 GLfloat angle, fAspect;
 
-vetor vetorCoordCamera = vetor(0,80, 200);
-vetor vetorCoordCarro = vetor(20.0,41.0,40.0);
-vetor vetorDistPercorrida = vetor(0.0,0.0,0.0);
+GLdouble x_camera = 0;
+GLdouble y_camera = 80;
+GLdouble z_camera = 200;
+
+
+double x_objeto, y_objeto, z_objeto;        // cubo
+double x_objeto_2, y_objeto_2, z_objeto_2;  // cubo
 
 GLdouble x_alvo = 0;
 GLdouble y_alvo = 0;
@@ -32,22 +43,89 @@ GLdouble z_alvo = 0;
 int slices = 16;
 int stacks = 16;
 
-double ang_rotacao_carro_y = 0;
+GLdouble x_translacao = 20.0;
+GLdouble y_translacao = 41.0;
+GLdouble z_translacao = 40.0;
+
 double ang_rotacao_roda_x = 0;
 double ang_rotacao_roda_y = 0;
+double ang_rotacao_carro_y = 0;
 
 bool moveu = false;
+
+vetor vetorPosicao = vetor(0,0,0);
+vetor vetorSentido = vetor(0,0,0);
+
+bool mudouDirecao = false;
 
 bool seta_cima = false;
 bool seta_baixo = false;
 bool seta_esquerda = false;
 bool seta_direita = false;
+bool primeiraImpressao = true;
 
-//posição inicial do carro antes de mudar a câmera
 
-GLdouble xi = vetorCoordCarro.x;
-GLdouble yi = vetorCoordCarro.y;
-GLdouble zi = vetorCoordCarro.z;
+// vetor com os números das texturas
+GLuint texture_id[MAX_NO_TEXTURES];
+
+
+void initTexture (void)
+{
+
+	// Habilita o uso de textura
+	glEnable ( GL_TEXTURE_2D );
+
+	// Define a forma de armazenamento dos pixels na textura (1= alihamento por byte)
+	glPixelStorei ( GL_UNPACK_ALIGNMENT, 1 );
+
+	// Define quantas texturas serão usadas no programa
+	glGenTextures (1, texture_id);  // 1 = uma textura;
+									// texture_id = vetor que guardas os números das texturas
+
+	// Define o número da textura do cubo.
+	texture_id[0] = 1001;
+	texture_id[1] = 1002;
+	texture_id[2] = 1003;
+	texture_id[3] = 1004;
+	texture_id[4] = 1005;
+	texture_id[5] = 1006;
+	texture_id[6] = 1007;
+	texture_id[7] = 1008;
+
+	// Define que tipo de textura será usada
+	// GL_TEXTURE_2D ==> define que será usada uma textura 2D (bitmaps)
+	// texture_id[CUBE_TEXTURE]  ==> define o número da textura
+	glBindTexture ( GL_TEXTURE_2D, texture_id[0] );
+
+	// carrega a uma imagem TGA
+	image_t temp_image;
+	tgaLoad  ( "C:\\imagens\\lec.tga", &temp_image, TGA_FREE | TGA_LOW_QUALITY );
+
+	glBindTexture ( GL_TEXTURE_2D, texture_id[1] );
+	tgaLoad  ( "C:\\imagens\\lecf.tga", &temp_image, TGA_FREE | TGA_LOW_QUALITY );
+
+	glBindTexture ( GL_TEXTURE_2D, texture_id[2] );
+	tgaLoad  ( "C:\\imagens\\ldc.tga", &temp_image, TGA_FREE | TGA_LOW_QUALITY );
+
+    glBindTexture ( GL_TEXTURE_2D, texture_id[3] );
+	tgaLoad  ( "C:\\imagens\\ldcf.tga", &temp_image, TGA_FREE | TGA_LOW_QUALITY );
+
+    glBindTexture ( GL_TEXTURE_2D, texture_id[4] );
+	tgaLoad  ( "C:\\imagens\\tra.tga", &temp_image, TGA_FREE | TGA_LOW_QUALITY );
+
+    glBindTexture ( GL_TEXTURE_2D, texture_id[5] );
+	tgaLoad  ( "C:\\imagens\\frente.tga", &temp_image, TGA_FREE | TGA_LOW_QUALITY );
+
+	glBindTexture ( GL_TEXTURE_2D, texture_id[6] );
+	tgaLoad  ( "C:\\imagens\\parabrisa.tga", &temp_image, TGA_FREE | TGA_LOW_QUALITY );
+
+    glBindTexture ( GL_TEXTURE_2D, texture_id[7] );
+	tgaLoad  ( "C:\\imagens\\teto.tga", &temp_image, TGA_FREE | TGA_LOW_QUALITY );
+
+    glBindTexture ( GL_TEXTURE_2D, texture_id[8] );
+	tgaLoad  ( "C:\\imagens\\capo.tga", &temp_image, TGA_FREE | TGA_LOW_QUALITY );
+
+}
 
 void rotacionarY(GLfloat angulo)
 {
@@ -55,111 +133,98 @@ void rotacionarY(GLfloat angulo)
 
     if(ang_rotacao_roda_y > 60) {
         ang_rotacao_roda_y = 60;
+
     } else if(ang_rotacao_roda_y < -60) {
         ang_rotacao_roda_y = -60;
+
     }
-
-    printf("aslakasa %lf", ang_rotacao_roda_y);
-
+    //printf("aslakasa %lf\n\n", ang_rotacao_roda_y);
 }
 
 void mover(GLdouble dist)
 {
-    /*
-//    vetor vetorDirecao;
-//
-//	if (mudouDirecao) {
-//
-//        vetor step1;
-//        vetor step2;
-//
-//        //Rotate around Y-axis:
-//        step1.x = cos( (ang_rotacao_roda_y + 90.0) * PIdiv180);
-//        step1.z = -sin( (ang_rotacao_roda_y + 90.0) * PIdiv180);
-//
-//        //Rotate around X-axis:
-//        double cosX = cos (ang_rotacao_roda_x * PIdiv180);
-//        step2.x = step1.x * cosX;
-//        step2.z = step1.z * cosX;
-//        step2.y = sin(ang_rotacao_roda_y * PIdiv180);
-//
-//        //Rotation around Z-axis not yet implemented, so:
-//        vetorDirecao = step1;
-//    }
-//
-//	vetorCoordCarro.x += vetorDirecao.x * dist;
-//	vetorCoordCarro.y += vetorDirecao.y * dist;
-//	vetorCoordCarro.z += vetorDirecao.z * dist;
-//
-//    mudouDirecao = false;
-*/
-
     vetor vetorDirecao;
 
-    if (ang_rotacao_roda_y > 0) {
+    if (ang_rotacao_roda_y) {
 
         //rotacionar em torno de y:
         vetorDirecao.x = cos( (ang_rotacao_roda_y ) * PIdiv180);
         vetorDirecao.z = -sin( (ang_rotacao_roda_y ) * PIdiv180);
-    printf("Angulo %lf",ang_rotacao_carro_y );
+
    } else {
 
         //rotacionar em torno de y:
         vetorDirecao.x = cos( (ang_rotacao_roda_y ) * PIdiv180);
         vetorDirecao.z = sin( (ang_rotacao_roda_y ) * PIdiv180);
 
-        printf("Angulo %lf",ang_rotacao_carro_y );
+        //printf("Angulo MENOR y %lf\n",ang_rotacao_roda_y );
+        //printf("Angulo MENOR x %lf\n",ang_rotacao_roda_x );
 
    }
-
     //ffa2- troquei z por x em vetorCoordCarro!!!!!!!!!!!
-    vetorCoordCarro.x -= vetorDirecao.x * dist;
-    vetorCoordCarro.z += vetorDirecao.z * dist;
-
+    vetorPosicao.x -= vetorDirecao.x * dist;
+    vetorPosicao.z += vetorDirecao.z * dist;
 }
+
 
 void verificar_teclas(){
 
     double inc_t = 90;
-    double angulo = 10;
+    double inc_r = 15;
 
-    if(seta_baixo) {
-        mover(0.5);
-        moveu = true;
-        printf("moveu baixo");
-    }
+	bool bateu_f = false;
+	bool bateu_a = false;
 
-    if(seta_cima) {
+	bateu_f = (abs(x_objeto - vetorPosicao.x - 3.5) <=1  );
+
+	//bateu_a = (abs(x_objeto_2 - vetorPosicao.x) <=1);
+
+    if(seta_baixo && !bateu_a) {
+        ang_rotacao_roda_x += 0.1;
         mover(-0.5);
         moveu = true;
-        printf("moveu cima");
+
+    }
+
+    if(seta_cima && !bateu_f) {
+        ang_rotacao_roda_x -= 0.1;
+        mover(0.5);
+        moveu = true;
     }
 
     if(seta_esquerda) {
-        rotacionarY(angulo);
+        rotacionarY(inc_r);
     }
 
     if(seta_direita) {
-        rotacionarY(-angulo);
+        rotacionarY(-inc_r);
     }
-
 }
-
 void roda(GLdouble x, GLdouble y, GLdouble z, bool ehRodaFrente)
 {
-
     glPushMatrix();
         glTranslated(x, y, z);
         if(ehRodaFrente)
             glRotated(ang_rotacao_roda_y,0,1,0);
         glRotated(ang_rotacao_roda_x,0,0,1);  //roda a roda =P
-        glutSolidTorus(0.5,1.0,slices,stacks);
+        glutSolidTorus(0.4,1.0,slices,stacks);
     glPopMatrix();
 
 }
 
+void desenhar_rodas_carro() {
+
+    glColor3f(0.0f, 0.0f, 0.0f); //deixa as rodas pretas
+
+	roda(20, 42, 40, false);
+	roda(20, 42, 40 -10, false);
+	roda(20 - 10, 42, 40, true);
+	roda(20 - 10, 42, 40 -10, true);
+}
+
 void desenhar_plano() {
 
+    glColor3f(0.0f, 0.0f, 1.0f); //deixa o plano azul
     glBegin(GL_QUADS);
 		glNormal3f(0.0, 1.0, 0.0); // Normal do plano
 		glVertex3f(-40.0, 40.0, -80.0);
@@ -169,123 +234,161 @@ void desenhar_plano() {
 	glEnd();
 }
 
-void desenhar_rodas_carro() {
-
-    glColor3f(0.0f, 0.0f, 0.0f); //deixa as rodas pretas
-
-	roda(vetorCoordCarro.x, vetorCoordCarro.y, vetorCoordCarro.z, false);
-	roda(vetorCoordCarro.x, vetorCoordCarro.y, vetorCoordCarro.z -10, false);
-	roda(vetorCoordCarro.x - 10, vetorCoordCarro.y, vetorCoordCarro.z, true);
-	roda(vetorCoordCarro.x - 10, vetorCoordCarro.y, vetorCoordCarro.z -10, true);
-}
-
 void desenhar_outra_parte_carro() {
 
-    double inc_inf_A_y = 2; // Parte de baixo e de cima do carrinho
-    double inc_sup_A_y = 4; // Parte de baixo e de cima do carrinho
-    double inc_inf_A_x = 3; // Parte de baixo do carrinho (e algumas de cima tambem)
-    double inc_sup_A_x = -13; //Parte de baixo do carrinho
-    double inc_inf_B_x = -7; // Parte de cima
-    double inc_Z = -9; // todas as partes...
+	double inc_inf_A_y = 2; // Parte de baixo e de cima do carrinho
+	double inc_sup_A_y = 4; // Parte de baixo e de cima do carrinho
 
-    glColor3f(1.0f, 0.0f, 0.0f);
+	double inc_inf_A_x = 3; // Parte de baixo do carrinho (e algumas de cima tambem)
+	double inc_sup_A_x = -13; //Parte de baixo do carrinho
 
-    glBegin(GL_QUADS);	 // Face inferior
-        glNormal3f(0.0, -1.0, 0.0);  // Normal da face
-        glVertex3f(vetorCoordCarro.x+inc_sup_A_x, vetorCoordCarro.y, vetorCoordCarro.z+inc_Z); // sup esq	 A
-        glVertex3f(vetorCoordCarro.x+inc_sup_A_x,vetorCoordCarro.y, vetorCoordCarro.z-1); // inf esq	 B
-        glVertex3f(vetorCoordCarro.x+inc_inf_A_x,vetorCoordCarro.y, vetorCoordCarro.z-1); // inf dir	 C
-        glVertex3f(vetorCoordCarro.x+inc_inf_A_x, vetorCoordCarro.y, vetorCoordCarro.z+inc_Z); // sup dir	 D
-    glEnd();
+	double inc_inf_B_x = -7; // Parte de cima
+	double inc_Z = -9; // todas as partes...
 
-    glBegin(GL_POLYGON);	 // Face poligono frontal
-        glNormal3f(0.0, 0.0, 1.0);  // Normal da face
-        glVertex3f(vetorCoordCarro.x+inc_inf_B_x,vetorCoordCarro.y+inc_inf_A_y, vetorCoordCarro.z-1); //	 M'
-        glVertex3f(vetorCoordCarro.x+inc_sup_A_x,vetorCoordCarro.y+inc_inf_A_y, vetorCoordCarro.z-1); //	 H
-        glVertex3f(vetorCoordCarro.x+inc_sup_A_x,vetorCoordCarro.y, vetorCoordCarro.z-1); //	 B
-        glVertex3f(vetorCoordCarro.x+inc_inf_A_x,vetorCoordCarro.y, vetorCoordCarro.z-1); //	 C
-        glVertex3f(vetorCoordCarro.x+inc_inf_A_x,vetorCoordCarro.y+inc_sup_A_y, vetorCoordCarro.z-1); //	 I
-        glVertex3f(vetorCoordCarro.x+inc_inf_B_x,vetorCoordCarro.y+inc_sup_A_y, vetorCoordCarro.z-1); //	 M
-    glEnd();
+    glColor3f(1.0f, 1.0f, 1.0f);
 
-    glBegin(GL_POLYGON);	 // Face poligono posterior
-        glNormal3f(0.0, 0.0, -1.0);  // Normal da face
-        glVertex3f(vetorCoordCarro.x+inc_inf_B_x, vetorCoordCarro.y+inc_inf_A_y, vetorCoordCarro.z+inc_Z); //	 L'
-        glVertex3f(vetorCoordCarro.x+inc_sup_A_x, vetorCoordCarro.y+inc_inf_A_y, vetorCoordCarro.z+inc_Z); // G
-        glVertex3f(vetorCoordCarro.x+inc_sup_A_x, vetorCoordCarro.y, vetorCoordCarro.z+inc_Z); //	 A
-        glVertex3f(vetorCoordCarro.x+inc_inf_A_x, vetorCoordCarro.y, vetorCoordCarro.z+inc_Z); //	 D
-        glVertex3f(vetorCoordCarro.x+inc_inf_A_x, vetorCoordCarro.y+inc_sup_A_y, vetorCoordCarro.z+inc_Z); //	 J
-        glVertex3f(vetorCoordCarro.x+inc_inf_B_x, vetorCoordCarro.y+inc_sup_A_y, vetorCoordCarro.z+inc_Z); //	 L
-    glEnd();
 
-    glBegin(GL_POLYGON);	 // Face direita
-        glNormal3f(1.0, 0.0, 0.0);  // Normal da face
-        glVertex3f(vetorCoordCarro.x+inc_inf_A_x,vetorCoordCarro.y, vetorCoordCarro.z-1); //	 C
-        glVertex3f(vetorCoordCarro.x+inc_inf_A_x, vetorCoordCarro.y, vetorCoordCarro.z+inc_Z); //	 D
-        glVertex3f(vetorCoordCarro.x+inc_inf_A_x, vetorCoordCarro.y+inc_sup_A_y, vetorCoordCarro.z+inc_Z); // sup dir	J
-        glVertex3f(vetorCoordCarro.x+inc_inf_A_x,vetorCoordCarro.y+inc_sup_A_y, vetorCoordCarro.z-1); // inf dir	 I
-    glEnd();
+	glBindTexture ( GL_TEXTURE_2D, texture_id[0] );
 
-    glBegin(GL_POLYGON);	 // Face esquerda
-        glNormal3f(-1.0, 0.0, 0.0); // Normal da face
-        glVertex3f(vetorCoordCarro.x+inc_sup_A_x,vetorCoordCarro.y, vetorCoordCarro.z-1); //	 B
-        glVertex3f(vetorCoordCarro.x+inc_sup_A_x, vetorCoordCarro.y, vetorCoordCarro.z+inc_Z); //	 A
-        glVertex3f(vetorCoordCarro.x+inc_sup_A_x, vetorCoordCarro.y+inc_inf_A_y, vetorCoordCarro.z+inc_Z); //	 G
-        glVertex3f(vetorCoordCarro.x+inc_sup_A_x,vetorCoordCarro.y+inc_inf_A_y, vetorCoordCarro.z-1); //	 H
-    glEnd();
+    glBegin ( GL_QUADS );
+		// Face frontal maior
+		glNormal3f(0.0, 0.0, 1.0);  // Normal da face
+		glTexCoord2d(0.0, 0.0); glVertex3f(20+inc_inf_B_x,42, 40-1); // M'' - D
+		glTexCoord2d(1.0, 0.0); glVertex3f(20+inc_inf_A_x,42, 40-1); // c - c
+		glTexCoord2d(1.0, 1.0); glVertex3f(20+inc_inf_A_x,42+inc_sup_A_y, 40-1); // i - b
+		glTexCoord2d(0.0, 1.0); glVertex3f(20+inc_inf_B_x,42+inc_sup_A_y, 40-1); // M - a
+	glEnd();
 
-    glBegin(GL_QUADS);	 // Face "capô"
-        glNormal3f(0.0, 1.0, 0.0);  // Normal da face
-        glVertex3f(vetorCoordCarro.x+inc_sup_A_x, vetorCoordCarro.y+inc_inf_A_y, vetorCoordCarro.z+inc_Z); //	 G
-        glVertex3f(vetorCoordCarro.x+inc_sup_A_x,vetorCoordCarro.y+inc_inf_A_y, vetorCoordCarro.z-1); //	 H
-        glVertex3f(vetorCoordCarro.x+inc_inf_B_x,vetorCoordCarro.y+inc_inf_A_y, vetorCoordCarro.z-1); //	M'
-        glVertex3f(vetorCoordCarro.x+inc_inf_B_x, vetorCoordCarro.y+inc_inf_A_y, vetorCoordCarro.z+inc_Z); //	 L'
-    glEnd();
+	glBindTexture ( GL_TEXTURE_2D, texture_id[1] );
+	glBegin ( GL_QUADS );
+		// Face frontal menor
+		glNormal3f(0.0, 0.0, 1.0);  // Normal da face
+		glTexCoord2d(0.0, 0.0); glVertex3f(20+inc_sup_A_x,42, 40-1); //	 B -D
+		glTexCoord2d(1.0, 0.0); glVertex3f(20+inc_inf_B_x,42, 40-1); // m'' -C
+		glTexCoord2d(1.0, 1.0); glVertex3f(20+inc_inf_B_x,42+inc_inf_A_y, 40-1); //	M' -B
+		glTexCoord2d(0.0, 1.0); glVertex3f(20+inc_sup_A_x,42+inc_inf_A_y, 40-1); //	 H -A
+	glEnd();
 
-    glBegin(GL_QUADS);	 // Face superior
-        glNormal3f(0.0, 1.0, 0.0);  // Normal da face
-        glVertex3f(vetorCoordCarro.x+inc_inf_A_x,vetorCoordCarro.y+inc_sup_A_y, vetorCoordCarro.z-1); // inf dir	 I
-        glVertex3f(vetorCoordCarro.x+inc_inf_A_x, vetorCoordCarro.y+inc_sup_A_y, vetorCoordCarro.z+inc_Z); // sup dir	J
-        glVertex3f(vetorCoordCarro.x+inc_inf_B_x, vetorCoordCarro.y+inc_sup_A_y, vetorCoordCarro.z+inc_Z); //	 L
-        glVertex3f(vetorCoordCarro.x+inc_inf_B_x,vetorCoordCarro.y+inc_sup_A_y, vetorCoordCarro.z-1); //	 M
-    glEnd();
+    glBindTexture ( GL_TEXTURE_2D, texture_id[2] );
+	glBegin ( GL_QUADS );
+		// Face posterio maior
+		glNormal3f(0.0, 0.0, -1.0);  // Normal da face
+		glTexCoord2d(0.0, 0.0); glVertex3f(20+inc_inf_A_x, 42, 40+inc_Z); // D - D
+		glTexCoord2d(1.0, 0.0); glVertex3f(20+inc_inf_B_x, 42, 40+inc_Z); // L'' - C
+		glTexCoord2d(1.0, 1.0); glVertex3f(20+inc_inf_B_x, 42+inc_sup_A_y, 40+inc_Z); // L - B
+		glTexCoord2d(0.0, 1.0); glVertex3f(20+inc_inf_A_x, 42+inc_sup_A_y, 40+inc_Z); // J - A
+	glEnd();
 
-    glColor4f(0.3f, 0.4f, 1.0f, 1.0f);
+    glBindTexture ( GL_TEXTURE_2D, texture_id[3] );
+	glBegin ( GL_QUADS );
+		// Face posterio menor
+		glNormal3f(0.0, 0.0, -1.0);  // Normal da face
+		glTexCoord2d(0.0, 0.0); glVertex3f(20+inc_inf_B_x, 42, 40+inc_Z); // L'' - D
+		glTexCoord2d(1.0, 0.0); glVertex3f(20+inc_sup_A_x, 42, 40+inc_Z); //  A  - C
+		glTexCoord2d(1.0, 1.0); glVertex3f(20+inc_sup_A_x, 42+inc_inf_A_y, 40+inc_Z); //  G - B
+		glTexCoord2d(0.0, 1.0); glVertex3f(20+inc_inf_B_x, 42+inc_inf_A_y, 40+inc_Z); //  L'- A
+	glEnd();
 
-    glBegin(GL_QUADS);	 // Face "parabrisa"
-    glNormal3f(-1.0, 0.0, 0.0);  // Normal da face
-    glVertex3f(vetorCoordCarro.x+inc_inf_B_x, vetorCoordCarro.y+inc_sup_A_y, vetorCoordCarro.z+inc_Z); //	 L
-    glVertex3f(vetorCoordCarro.x+inc_inf_B_x,vetorCoordCarro.y+inc_sup_A_y, vetorCoordCarro.z-1); //	 M
-    glVertex3f(vetorCoordCarro.x+inc_inf_B_x,vetorCoordCarro.y+inc_inf_A_y, vetorCoordCarro.z-1); //	M'
-    glVertex3f(vetorCoordCarro.x+inc_inf_B_x, vetorCoordCarro.y+inc_inf_A_y, vetorCoordCarro.z+inc_Z); //	 L'
-    glEnd();
+    glBindTexture ( GL_TEXTURE_2D, texture_id[4] );
+	glBegin ( GL_QUADS );
+		// Face traseira
+		glNormal3f(1.0, 0.0, 0.0);  // Normal da face
+        glTexCoord2d(0.0, 0.0); glVertex3f(20+inc_inf_A_x,42, 40-1); //	 C - D
+		glTexCoord2d(1.0, 0.0); glVertex3f(20+inc_inf_A_x, 42, 40+inc_Z); //  D  - C
+		glTexCoord2d(1.0, 1.0); glVertex3f(20+inc_inf_A_x, 42+inc_sup_A_y, 40+inc_Z); //	J - B
+		glTexCoord2d(0.0, 1.0); glVertex3f(20+inc_inf_A_x,42+inc_sup_A_y, 40-1); //  I - A
+	glEnd();
 
+    glBindTexture ( GL_TEXTURE_2D, texture_id[5] );
+	glBegin ( GL_QUADS );
+		// Face frente
+		glNormal3f(-1.0, 0.0, 0.0);  // Normal da face
+        glTexCoord2d(0.0, 0.0); glVertex3f(20+inc_sup_A_x, 42, 40+inc_Z); //  A  - D
+		glTexCoord2d(1.0, 0.0); glVertex3f(20+inc_sup_A_x,42, 40-1); //	 B - C
+		glTexCoord2d(1.0, 1.0); glVertex3f(20+inc_sup_A_x,42+inc_inf_A_y, 40-1); //	 H - B
+		glTexCoord2d(0.0, 1.0); glVertex3f(20+inc_sup_A_x, 42+inc_inf_A_y, 40+inc_Z); //  G - A
+	glEnd();
+
+    glBindTexture ( GL_TEXTURE_2D, texture_id[6] );
+	glBegin ( GL_QUADS );
+		// Face parabrisa
+		glNormal3f(-1.0, 0.0, 0.0);  // Normal da face
+        glTexCoord2d(0.0, 0.0); glVertex3f(20+inc_inf_B_x, 42+inc_inf_A_y, 40+inc_Z); //  L'- D
+		glTexCoord2d(1.0, 0.0); glVertex3f(20+inc_inf_B_x,42+inc_inf_A_y, 40-1); //	M' -C
+		glTexCoord2d(1.0, 1.0); glVertex3f(20+inc_inf_B_x,42+inc_sup_A_y, 40-1); // M - B
+		glTexCoord2d(0.0, 1.0); glVertex3f(20+inc_inf_B_x, 42+inc_sup_A_y, 40+inc_Z); // L - A
+	glEnd();
+
+    glBindTexture ( GL_TEXTURE_2D, texture_id[7] );
+	glBegin ( GL_QUADS );
+		// Face teto
+		glNormal3f(0.0, 1.0, 0.0);  // Normal da face
+        glTexCoord2d(0.0, 0.0); glVertex3f(20+inc_inf_B_x,42+inc_sup_A_y, 40-1); // M - D
+		glTexCoord2d(1.0, 0.0); glVertex3f(20+inc_inf_A_x,42+inc_sup_A_y, 40-1); //  I - C
+		glTexCoord2d(1.0, 1.0); glVertex3f(20+inc_inf_A_x, 42+inc_sup_A_y, 40+inc_Z); //	J - B
+		glTexCoord2d(0.0, 1.0); glVertex3f(20+inc_inf_B_x, 42+inc_sup_A_y, 40+inc_Z); // L - A
+	glEnd();
+
+    glBindTexture ( GL_TEXTURE_2D, texture_id[8] );
+	glBegin ( GL_QUADS );
+		// Face capo
+		glNormal3f(0.0, 1.0, 0.0);  // Normal da face
+        glTexCoord2d(0.0, 0.0); glVertex3f(20+inc_sup_A_x, 42+inc_inf_A_y, 40+inc_Z); //  G - D
+		glTexCoord2d(1.0, 0.0); glVertex3f(20+inc_sup_A_x,42+inc_inf_A_y, 40-1); //	 H - C
+		glTexCoord2d(1.0, 1.0); glVertex3f(20+inc_inf_B_x,42+inc_inf_A_y, 40-1); //	M' -B
+		glTexCoord2d(0.0, 1.0); glVertex3f(20+inc_inf_B_x, 42+inc_inf_A_y, 40+inc_Z); //  L'- A
+	glEnd();
+
+    glColor3f(1.0f, 1.0f, 1.0f);
 }
 
+void desenhar_obstaculos(){
+
+    glColor3f(10.0f, 0.0f, 1.0f);
+
+    x_objeto = -10;
+	y_objeto = 45;
+	z_objeto = 40;
+
+	x_objeto_2 = 30;
+	y_objeto_2 = 45;
+	z_objeto_2 = 40;
+
+	glPushMatrix();
+        glTranslated(x_objeto, y_objeto, z_objeto);
+        glutSolidCube(10);
+    glPopMatrix();
+
+ /*   glPushMatrix();
+        glTranslated(30, 45, 40);
+        glutSolidCube(10);
+    glPopMatrix();*/
+}
 // Função callback chamada para fazer o desenho
 void Desenha(void)
 {
-    glLoadIdentity();
-    gluLookAt( vetorCoordCamera.x, vetorCoordCamera.y, vetorCoordCamera.z, vetorCoordCarro.x - xi, 0 ,vetorCoordCarro.z - zi - 100, 0,1,0);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glColor3f(0.0f, 0.0f, 1.0f); //deixa o plano azul
 
-    desenhar_plano();
-
-    glPushMatrix();
         if(moveu) {
             ang_rotacao_carro_y += ang_rotacao_roda_y;
             glRotated(ang_rotacao_carro_y,0,1,0);
             moveu = false;
         }
-        printf("entrou aqui!!");
-        desenhar_rodas_carro();
-        desenhar_outra_parte_carro();
-    glPopMatrix();
+       glPushMatrix();
+            glTranslated(vetorPosicao.x ,vetorPosicao.y,vetorPosicao.z);
+            desenhar_rodas_carro();
+            desenhar_outra_parte_carro();
+       glPopMatrix();
+
+       desenhar_plano();
+       desenhar_obstaculos();
+       printf("x: %lf , y: %lf , z: %lf\n\n",vetorPosicao.x,vetorPosicao.y - 35,vetorPosicao.z);
 
 	glutSwapBuffers();
 }
+
+
 
 // iluminação
 void light (void)
@@ -345,9 +448,9 @@ void EspecificaParametrosVisualizacao(void)
 	// Especifica sistema de coordenadas do modelo
 	glMatrixMode(GL_MODELVIEW);
 	// Inicializa sistema de coordenadas do modelo
-//	glLoadIdentity();
-//
-//    gluLookAt( vetorCoordCamera.x,vetorCoordCamera.y,vetorCoordCamera.z, vetorCoordCarro.x, 0 ,vetorCoordCarro.z - 100, 0,1,0);
+	glLoadIdentity();
+
+    gluLookAt( x_camera,y_camera,z_camera, x_alvo,y_alvo,z_alvo, 0,1,0);
 }
 
 // Função callback chamada quando o tamanho da janela é alterado
@@ -402,42 +505,41 @@ void key(unsigned char key, int x, int y)
             }
             break;
 
-        case 'i':
-            vetorCoordCamera.x += 10;
-            x_alvo -= 10;
-            EspecificaParametrosVisualizacao();
-            glutPostRedisplay();
-            break;
-        case 'o':
-            vetorCoordCamera.y += 10;
-            y_alvo -= 10;
-            EspecificaParametrosVisualizacao();
-            glutPostRedisplay();
-            break;
-        case 'p':
-            vetorCoordCamera.z += 10;
-            z_alvo -= 10;
-            EspecificaParametrosVisualizacao();
-            glutPostRedisplay();
-            break;
-        case 'j':
-            vetorCoordCamera.x -= 10;
-            x_alvo += 10;
-            EspecificaParametrosVisualizacao();
-            glutPostRedisplay();
-            break;
-        case 'k':
-            vetorCoordCamera.y -= 10;
-            y_alvo += 10;
-            EspecificaParametrosVisualizacao();
-            glutPostRedisplay();
-            break;
-        case 'l':
-            vetorCoordCamera.z -= 10;
-            z_alvo += 10;
-            EspecificaParametrosVisualizacao();
-            glutPostRedisplay();
-            break;
+		case 'j':
+			x_camera+=10;
+			EspecificaParametrosVisualizacao();
+			glutPostRedisplay();
+			break;
+
+		case 'k':
+			y_camera+=10;
+			EspecificaParametrosVisualizacao();
+			glutPostRedisplay();
+			break;
+
+		case 'l':
+			z_camera+=10;
+			EspecificaParametrosVisualizacao();
+			glutPostRedisplay();
+			break;
+
+		case 'u':
+			x_camera-=10;
+			EspecificaParametrosVisualizacao();
+			glutPostRedisplay();
+			break;
+
+		case 'i':
+			y_camera-=10;
+			EspecificaParametrosVisualizacao();
+			glutPostRedisplay();
+			break;
+
+		case 'o':
+			z_camera-=10;
+			EspecificaParametrosVisualizacao();
+			glutPostRedisplay();
+			break;
     }
 
     glutPostRedisplay();
@@ -490,9 +592,9 @@ void s_key(int key, int x, int y)
             break;
 
         case GLUT_KEY_F5:
-            vetorCoordCarro.x = 20.0;
-            vetorCoordCarro.y = 41.0;
-            vetorCoordCarro.z = 40.0;
+            x_translacao = 20.0;
+            y_translacao = 41.0;
+            z_translacao = 40.0;
             break;
     }
 
@@ -504,22 +606,23 @@ void s_key(int key, int x, int y)
 // Programa Principal
 int main(int argc, char *argv[])
 {
+    glutInit(&argc, argv);
     //coisas da janela
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 	glutInitWindowSize(800,800);
-	glutCreateWindow("Calhambeque");
+	glutCreateWindow("calhambeque");
 
+    initTexture();
+    glColor3f(0.0f, 0.0f, 1.0f);
 	//"métodos" principais
 	glutDisplayFunc(Desenha);
 	glutReshapeFunc(AlteraTamanhoJanela);
 	glutMouseFunc(GerenciaMouse);
 	glutKeyboardFunc(key);
 	glutSpecialUpFunc(s_key_up);
-	//glutSpecialFunc(s_key);
+	glutSpecialFunc(s_key);
 	light();
 
 	//processa todas as mensagens
 	glutMainLoop();
-
-	return EXIT_SUCCESS;
 }
