@@ -43,6 +43,8 @@
 			<Add directory="D:\Instaladores\CB_4551_alleg - openGL\mingw\lib" />
 		</Linker>
 		<Unit filename="main.cpp" />
+		<Unit filename="tgaload.cpp" />
+		<Unit filename="tgaload.h" />
 		<Unit filename="vetor.cpp" />
 		<Unit filename="vetor.h" />
 		<Extensions>

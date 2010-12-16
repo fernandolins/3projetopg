@@ -246,3 +246,31 @@
 	<_mingw.h>
 	<stddef.h>
 
+1292275266 source:c:\users\victor\desktop\3projetopg\vetor.cpp
+	"vetor.h"
+
+1292275266 c:\users\victor\desktop\3projetopg\vetor.h
+	<windows.h>
+	<GL/glut.h>
+
+1292508784 source:c:\users\victor\desktop\3projetopg\main.cpp
+	<GLUT/glut.h>
+	<windows.h>
+	<GL/glut.h>
+	<gl/glu.h>
+	<gl/gl.h>
+	<stdlib.h>
+	<stdio.h>
+	<math.h>
+	"vetor.h"
+	"tgaload.h"
+
+1292475101 source:c:\users\victor\desktop\3projetopg\tgaload.cpp
+	<windows.h>
+	<GL\glu.h>
+	<stdio.h>
+	<stdlib.h>
+	"tgaload.h"
+
+1292474625 c:\users\victor\desktop\3projetopg\tgaload.h
+
